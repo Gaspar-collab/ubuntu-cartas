@@ -246,7 +246,8 @@ def crear_nueva_sala():
             "jugador1": None,
             "jugador2": None
         },
-        "turno": None
+        "turno": None,
+        "mensajes": []  # Almacena los mensajes del chat
     }
     return codigo
 
@@ -363,7 +364,7 @@ else:
             st.rerun()
 
     # -----------------------------------------------------------------------------
-    # TODO EL TABLERO DENTRO DEL FRAGMENTO DE REFRESCO EN VIVO (CADA 2 SEGUNDOS)
+    # TABLERO Y CHAT SINCRONIZADOS CADA 2 SEGUNDOS
     # -----------------------------------------------------------------------------
     @st.fragment(run_every="2s")
     def tablero_juego_sincronizado(codigo_sala, mi_rol):
@@ -482,6 +483,40 @@ else:
                     <div class="pregunta-texto">{pregunta}</div>
                 </div>
             """, unsafe_allow_html=True)
+
+        # -------------------------------------------------------------------------
+        # 6. SECCIÓN CHAT DE LA SALA EN VIVO
+        # -------------------------------------------------------------------------
+        st.divider()
+        st.subheader("💬 Chat de la Sala")
+
+        # Mensajes en caja scrollable
+        chat_box = st.container(height=180)
+        with chat_box:
+            if not sala["mensajes"]:
+                st.caption("Aún no hay mensajes. ¡Escribe algo para hablar mientras juegan!")
+            for msg in sala["mensajes"]:
+                if msg["rol"] == mi_rol:
+                    st.markdown(f"**Tú ({msg['autor']}):** {msg['texto']}")
+                else:
+                    st.markdown(f"**{msg['autor']}:** {msg['texto']}")
+
+        # Formulario para mandar mensajes
+        mi_nombre_chat = sala["jugadores"][mi_rol] or ("Jugador 1" if mi_rol == "jugador1" else "Jugador 2")
+        with st.form("form_chat_sala", clear_on_submit=True):
+            col_txt, col_btn = st.columns([4, 1])
+            with col_txt:
+                texto_mensaje = st.text_input("Escribe un mensaje...", placeholder="Escribe un mensaje aquí...", label_visibility="collapsed")
+            with col_btn:
+                btn_enviar = st.form_submit_button("Enviar 📩")
+
+            if btn_enviar and texto_mensaje.strip():
+                sala["mensajes"].append({
+                    "rol": mi_rol,
+                    "autor": mi_nombre_chat,
+                    "texto": texto_mensaje.strip()
+                })
+                st.rerun()
 
     # LLAMADA A LA FUNCIÓN AUTO-SINCRONIZADA
     tablero_juego_sincronizado(codigo_sala, mi_rol)
