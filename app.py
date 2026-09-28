@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import random
 import string
 
@@ -6,7 +7,7 @@ import string
 st.set_page_config(
     page_title="Ubuntu: Cartas de Conexión",
     page_icon="🧩",
-    layout="centered"
+    layout="wide"
 )
 
 # -----------------------------------------------------------------------------
@@ -136,7 +137,7 @@ st.markdown("""
     /* BOTONES DE CATEGORÍA */
     div.stButton > button {
         width: 100% !important;
-        height: 75px !important;
+        height: 70px !important;
         border-radius: 50px !important;
         border: 3px solid #000000 !important;
         box-shadow: 4px 5px 0px #000000 !important;
@@ -152,7 +153,7 @@ st.markdown("""
     div.stButton > button *, 
     div.stButton > button p {
         font-family: 'Comfortaa', cursive, sans-serif !important;
-        font-size: 19px !important;
+        font-size: 17px !important;
         font-weight: 800 !important;
         letter-spacing: 1px !important;
         text-transform: uppercase;
@@ -176,9 +177,9 @@ st.markdown("""
     }
 
     .carta-box {
-        padding: 40px 30px;
+        padding: 35px 25px;
         border-radius: 24px;
-        margin-top: 20px;
+        margin-top: 15px;
         text-align: center;
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
         border: 3px solid #000000;
@@ -186,7 +187,7 @@ st.markdown("""
     
     .pregunta-texto {
         font-family: 'Bryndan Write', 'Patrick Hand', 'Caveat', cursive, sans-serif !important;
-        font-size: 32px !important;
+        font-size: 28px !important;
         font-weight: 500;
         line-height: 1.4;
     }
@@ -204,21 +205,21 @@ st.markdown("""
     .turno-badge {
         background: #12cdb0;
         color: #000000;
-        padding: 10px 24px;
+        padding: 8px 20px;
         border-radius: 30px;
         font-weight: 800;
-        font-size: 18px;
+        font-size: 16px;
         border: 3px solid #000000;
         box-shadow: 3px 4px 0px #000000;
         display: inline-block;
-        margin-top: 10px;
+        margin-top: 5px;
     }
 
     .dado-card {
         background: #FFFFFF;
         border: 2px solid #000000;
         border-radius: 16px;
-        padding: 15px;
+        padding: 12px;
         text-align: center;
         box-shadow: 3px 3px 0px #000000;
     }
@@ -247,7 +248,7 @@ def crear_nueva_sala():
             "jugador2": None
         },
         "turno": None,
-        "mensajes": []  # Almacena los mensajes del chat
+        "mensajes": []
     }
     return codigo
 
@@ -264,7 +265,7 @@ def sacar_carta_sala(codigo_sala, cat, rol_jugador):
             "jugador": nombre_actual
         }
         
-        # Alternar turno al otro jugador
+        # Alternar turno
         sala["turno"] = "jugador2" if rol_jugador == "jugador1" else "jugador1"
 
 # -----------------------------------------------------------------------------
@@ -306,7 +307,7 @@ if not st.session_state.codigo_sala:
 
 else:
     # -----------------------------------------------------------------------------
-    # INTERFAZ: TABLERO EN VIVO
+    # INTERFAZ: TABLERO Y CHAT RESPONSIVO
     # -----------------------------------------------------------------------------
     codigo_sala = st.session_state.codigo_sala
     mi_rol = st.session_state.mi_rol
@@ -364,7 +365,7 @@ else:
             st.rerun()
 
     # -----------------------------------------------------------------------------
-    # TABLERO Y CHAT SINCRONIZADOS CADA 2 SEGUNDOS
+    # FRAGMENTO AUTOSINCRONIZADO: TABLERO (IZQ) Y CHAT (DER EN PC / ABAJO EN MÓVIL)
     # -----------------------------------------------------------------------------
     @st.fragment(run_every="2s")
     def tablero_juego_sincronizado(codigo_sala, mi_rol):
@@ -375,148 +376,168 @@ else:
         j1 = sala["jugadores"]["jugador1"]
         j2 = sala["jugadores"]["jugador2"]
 
-        # 1. ESPERA DEL JUGADOR 2
+        # ESPERA DEL JUGADOR 2
         if not j2:
             st.warning(f"👋 ¡Hola {j1}! Pásale el código **`{codigo_sala}`** a tu compañera para que se una a la partida.")
             st.info("⏳ Esta pantalla avanzará automáticamente cuando el Jugador 2 se conecte...")
             return
 
-        # 2. DADOS
-        d1 = sala["dados"]["jugador1"]
-        d2 = sala["dados"]["jugador2"]
-
-        st.subheader("🎲 Sorteo con Dado")
-        col_dado1, col_dado2 = st.columns(2)
-
-        with col_dado1:
-            st.markdown(f"<div class='dado-card'><b>{j1}</b>", unsafe_allow_html=True)
-            if d1 is not None:
-                st.markdown(f"<h2 style='margin:10px 0;'>🎲 {d1}</h2>", unsafe_allow_html=True)
-            else:
-                st.write("Aún no ha tirado")
-                if mi_rol == "jugador1":
-                    if st.button("🎲 Tirar mi dado", key="btn_dado_j1"):
-                        sala["dados"]["jugador1"] = random.randint(1, 6)
-                        st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        with col_dado2:
-            st.markdown(f"<div class='dado-card'><b>{j2}</b>", unsafe_allow_html=True)
-            if d2 is not None:
-                st.markdown(f"<h2 style='margin:10px 0;'>🎲 {d2}</h2>", unsafe_allow_html=True)
-            else:
-                st.write("Aún no ha tirado")
-                if mi_rol == "jugador2":
-                    if st.button("🎲 Tirar mi dado", key="btn_dado_j2"):
-                        sala["dados"]["jugador2"] = random.randint(1, 6)
-                        st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        # EVALUACIÓN DE DADOS Y TURNO INICIAL
-        if d1 is not None and d2 is not None and sala["turno"] is None:
-            if d1 > d2:
-                sala["turno"] = "jugador1"
-            elif d2 > d1:
-                sala["turno"] = "jugador2"
-            else:
-                st.error("¡Empataron los dados! Tiren de nuevo.")
-                if st.button("🔄 Repetir tiro de dados"):
-                    sala["dados"] = {"jugador1": None, "jugador2": None}
-                    st.rerun()
-
-        st.divider()
-
-        # 3. INDICADOR DE TURNO
-        es_mi_turno = (sala["turno"] == mi_rol)
-        nombre_turno_actual = sala["jugadores"].get(sala["turno"], "Nadie (tiren los dados)")
-
-        if sala["turno"]:
-            if es_mi_turno:
-                st.markdown(f"<div style='text-align:center;'><span class='turno-badge'>🎯 ¡ES TU TURNO DE ELEGIR CARTA!</span></div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div style='text-align:center;'><span class='turno-badge' style='background:#fca5a5;'>⏳ TURNO DE: {nombre_turno_actual.upper()}</span></div>", unsafe_allow_html=True)
-        else:
-            st.info("💡 Ambos deben tirar sus dados arriba para definir quién empieza.")
-
-        st.write("")
-        st.subheader("Elige un mazo:")
-
-        # 4. BOTONES DE MAZOS
-        col1, col2, col3 = st.columns(3)
-        fila_1 = [("PENSAMIENTOS", col1), ("CONEXIONES", col2), ("EMOCIONES", col3)]
-
-        for cat, col in fila_1:
-            cant = len(sala["mazos"][cat])
-            with col:
-                if col.button(cat, key=f"btn_{cat}", disabled=(cant == 0 or not es_mi_turno)):
-                    sacar_carta_sala(codigo_sala, cat, mi_rol)
-                    st.rerun()
-
-        st.write("")
-
-        sp_izq, col_recuerdos, col_general, sp_der = st.columns([0.5, 1, 1, 0.5])
-
-        cant_recuerdos = len(sala["mazos"]["RECUERDOS"])
-        with col_recuerdos:
-            if col_recuerdos.button("RECUERDOS", key="btn_RECUERDOS", disabled=(cant_recuerdos == 0 or not es_mi_turno)):
-                sacar_carta_sala(codigo_sala, "RECUERDOS", mi_rol)
-                st.rerun()
-
-        cant_general = len(sala["mazos"]["GENERAL"])
-        with col_general:
-            if col_general.button("GENERAL", key="btn_GENERAL", disabled=(cant_general == 0 or not es_mi_turno)):
-                sacar_carta_sala(codigo_sala, "GENERAL", mi_rol)
-                st.rerun()
-
-        # 5. CARTA DESPLEGADA
-        if sala["carta_actual"]:
-            cat = sala["carta_actual"]["categoria"]
-            pregunta = sala["carta_actual"]["pregunta"]
-            quien_saco = sala["carta_actual"]["jugador"]
-            estilo = ESTILOS_CATEGORIA[cat]
-            
-            st.markdown(f"""
-                <div class="carta-box" style="background-color: {estilo['bg']}; color: {estilo['text']};">
-                    <div style="font-size: 14px; font-weight: 700; opacity: 0.8; margin-bottom: 8px;">
-                        CARTA DE {quien_saco.upper()}
-                    </div>
-                    <div class="pregunta-texto">{pregunta}</div>
-                </div>
-            """, unsafe_allow_html=True)
+        col_juego, col_chat = st.columns([1.7, 1.0])
 
         # -------------------------------------------------------------------------
-        # 6. SECCIÓN CHAT DE LA SALA EN VIVO
+        # COLUMNA IZQUIERDA: EL TABLERO DE JUEGO
         # -------------------------------------------------------------------------
-        st.divider()
-        st.subheader("💬 Chat de la Sala")
+        with col_juego:
+            # DADOS
+            d1 = sala["dados"]["jugador1"]
+            d2 = sala["dados"]["jugador2"]
 
-        # Mensajes en caja scrollable
-        chat_box = st.container(height=180)
-        with chat_box:
-            if not sala["mensajes"]:
-                st.caption("Aún no hay mensajes. ¡Escribe algo para hablar mientras juegan!")
-            for msg in sala["mensajes"]:
-                if msg["rol"] == mi_rol:
-                    st.markdown(f"**Tú ({msg['autor']}):** {msg['texto']}")
+            st.subheader("🎲 Sorteo con Dado")
+            col_dado1, col_dado2 = st.columns(2)
+
+            with col_dado1:
+                st.markdown(f"<div class='dado-card'><b>{j1}</b>", unsafe_allow_html=True)
+                if d1 is not None:
+                    st.markdown(f"<h3 style='margin:5px 0;'>🎲 {d1}</h3>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"**{msg['autor']}:** {msg['texto']}")
+                    st.write("Aún no ha tirado")
+                    if mi_rol == "jugador1":
+                        if st.button("🎲 Tirar dado", key="btn_dado_j1"):
+                            sala["dados"]["jugador1"] = random.randint(1, 6)
+                            st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
 
-        # Formulario para mandar mensajes
-        mi_nombre_chat = sala["jugadores"][mi_rol] or ("Jugador 1" if mi_rol == "jugador1" else "Jugador 2")
-        with st.form("form_chat_sala", clear_on_submit=True):
-            col_txt, col_btn = st.columns([4, 1])
-            with col_txt:
-                texto_mensaje = st.text_input("Escribe un mensaje...", placeholder="Escribe un mensaje aquí...", label_visibility="collapsed")
-            with col_btn:
-                btn_enviar = st.form_submit_button("Enviar 📩")
+            with col_dado2:
+                st.markdown(f"<div class='dado-card'><b>{j2}</b>", unsafe_allow_html=True)
+                if d2 is not None:
+                    st.markdown(f"<h3 style='margin:5px 0;'>🎲 {d2}</h3>", unsafe_allow_html=True)
+                else:
+                    st.write("Aún no ha tirado")
+                    if mi_rol == "jugador2":
+                        if st.button("🎲 Tirar dado", key="btn_dado_j2"):
+                            sala["dados"]["jugador2"] = random.randint(1, 6)
+                            st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
 
-            if btn_enviar and texto_mensaje.strip():
-                sala["mensajes"].append({
-                    "rol": mi_rol,
-                    "autor": mi_nombre_chat,
-                    "texto": texto_mensaje.strip()
-                })
-                st.rerun()
+            # EVALUACIÓN DE DADOS
+            if d1 is not None and d2 is not None and sala["turno"] is None:
+                if d1 > d2:
+                    sala["turno"] = "jugador1"
+                elif d2 > d1:
+                    sala["turno"] = "jugador2"
+                else:
+                    st.error("¡Empataron! Tiren de nuevo.")
+                    if st.button("🔄 Repetir tiro"):
+                        sala["dados"] = {"jugador1": None, "jugador2": None}
+                        st.rerun()
 
-    # LLAMADA A LA FUNCIÓN AUTO-SINCRONIZADA
+            st.write("")
+
+            # INDICADOR DE TURNO
+            es_mi_turno = (sala["turno"] == mi_rol)
+            nombre_turno_actual = sala["jugadores"].get(sala["turno"], "Nadie (tiren dados)")
+
+            if sala["turno"]:
+                if es_mi_turno:
+                    st.markdown(f"<div style='text-align:center;'><span class='turno-badge'>🎯 ¡TU TURNO DE ELEGIR!</span></div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div style='text-align:center;'><span class='turno-badge' style='background:#fca5a5;'>⏳ TURNO DE: {nombre_turno_actual.upper()}</span></div>", unsafe_allow_html=True)
+            else:
+                st.info("💡 Tiren sus dados arriba para definir quién empieza.")
+
+            st.write("")
+
+            # MAZOS DE CARTAS
+            c1, c2, c3 = st.columns(3)
+            fila_1 = [("PENSAMIENTOS", c1), ("CONEXIONES", c2), ("EMOCIONES", c3)]
+
+            for cat, col in fila_1:
+                cant = len(sala["mazos"][cat])
+                with col:
+                    if col.button(cat, key=f"btn_{cat}", disabled=(cant == 0 or not es_mi_turno)):
+                        sacar_carta_sala(codigo_sala, cat, mi_rol)
+                        st.rerun()
+
+            st.write("")
+            c4, c5 = st.columns(2)
+
+            cant_recuerdos = len(sala["mazos"]["RECUERDOS"])
+            with c4:
+                if c4.button("RECUERDOS", key="btn_RECUERDOS", disabled=(cant_recuerdos == 0 or not es_mi_turno)):
+                    sacar_carta_sala(codigo_sala, "RECUERDOS", mi_rol)
+                    st.rerun()
+
+            cant_general = len(sala["mazos"]["GENERAL"])
+            with c5:
+                if c5.button("GENERAL", key="btn_GENERAL", disabled=(cant_general == 0 or not es_mi_turno)):
+                    sacar_carta_sala(codigo_sala, "GENERAL", mi_rol)
+                    st.rerun()
+
+            # CARTA DESPLEGADA
+            if sala["carta_actual"]:
+                cat = sala["carta_actual"]["categoria"]
+                pregunta = sala["carta_actual"]["pregunta"]
+                quien_saco = sala["carta_actual"]["jugador"]
+                estilo = ESTILOS_CATEGORIA[cat]
+                
+                st.markdown(f"""
+                    <div class="carta-box" style="background-color: {estilo['bg']}; color: {estilo['text']};">
+                        <div style="font-size: 13px; font-weight: 700; opacity: 0.8; margin-bottom: 6px;">
+                            CARTA DE {quien_saco.upper()}
+                        </div>
+                        <div class="pregunta-texto">{pregunta}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        # -------------------------------------------------------------------------
+        # COLUMNA DERECHA: CHAT CON AUTOSCROLL AUTOMÁTICO
+        # -------------------------------------------------------------------------
+        with col_chat:
+            st.subheader("💬 Chat de la Sala")
+
+            # Altura fija para el historial
+            chat_box = st.container(height=380)
+            with chat_box:
+                if not sala["mensajes"]:
+                    st.caption("Aún no hay mensajes. ¡Escriban para conversar mientras juegan!")
+                for msg in sala["mensajes"]:
+                    if msg["rol"] == mi_rol:
+                        st.markdown(f"**Tú:** {msg['texto']}")
+                    else:
+                        st.markdown(f"**{msg['autor']}:** {msg['texto']}")
+                
+                # Elemento ancla para desplazar el scroll
+                st.markdown("<div id='fin-chat'></div>", unsafe_allow_html=True)
+
+            # Script de JS que baja la caja automáticamente
+            components.html(
+                """
+                <script>
+                    var el = window.parent.document.getElementById('fin-chat');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                    }
+                </script>
+                """,
+                height=0
+            )
+
+            # Formulario de entrada de chat
+            mi_nombre_chat = sala["jugadores"][mi_rol] or ("Jugador 1" if mi_rol == "jugador1" else "Jugador 2")
+            with st.form("form_chat_sala", clear_on_submit=True):
+                col_txt, col_btn = st.columns([3, 1])
+                with col_txt:
+                    texto_mensaje = st.text_input("Mensaje", placeholder="Escribe...", label_visibility="collapsed")
+                with col_btn:
+                    btn_enviar = st.form_submit_button("📩")
+
+                if btn_enviar and texto_mensaje.strip():
+                    sala["mensajes"].append({
+                        "rol": mi_rol,
+                        "autor": mi_nombre_chat,
+                        "texto": texto_mensaje.strip()
+                    })
+                    st.rerun()
+
+    # EJECUCIÓN
     tablero_juego_sincronizado(codigo_sala, mi_rol)
