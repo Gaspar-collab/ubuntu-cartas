@@ -265,8 +265,9 @@ def sacar_carta_sala(codigo_sala, cat, rol_jugador):
             "jugador": nombre_actual
         }
         
-        # Alternar turno
-        sala["turno"] = "jugador2" if rol_jugador == "jugador1" else "jugador1"
+        # Al sacar carta, reseteamos los dados y el turno para que en la siguiente ronda vuelvan a lanzar los dados
+        sala["dados"] = {"jugador1": None, "jugador2": None}
+        sala["turno"] = None
 
 # -----------------------------------------------------------------------------
 # INTERFAZ: LOBBY
@@ -392,7 +393,7 @@ else:
             d1 = sala["dados"]["jugador1"]
             d2 = sala["dados"]["jugador2"]
 
-            st.subheader("🎲 Sorteo con Dado")
+            st.subheader("🎲 Lanzamiento de Dados por Ronda")
             col_dado1, col_dado2 = st.columns(2)
 
             with col_dado1:
@@ -426,8 +427,8 @@ else:
                 elif d2 > d1:
                     sala["turno"] = "jugador2"
                 else:
-                    st.error("¡Empataron! Tiren de nuevo.")
-                    if st.button("🔄 Repetir tiro"):
+                    st.error("¡Empataron en el tiro! Tiren los dados de nuevo.")
+                    if st.button("🔄 Volver a tirar dados", key="btn_empate"):
                         sala["dados"] = {"jugador1": None, "jugador2": None}
                         st.rerun()
 
@@ -435,15 +436,16 @@ else:
 
             # INDICADOR DE TURNO
             es_mi_turno = (sala["turno"] == mi_rol)
-            nombre_turno_actual = sala["jugadores"].get(sala["turno"], "Nadie (tiren dados)")
+            nombre_turno_actual = sala["jugadores"].get(sala["turno"], None)
 
             if sala["turno"]:
                 if es_mi_turno:
-                    st.markdown(f"<div style='text-align:center;'><span class='turno-badge'>🎯 ¡TU TURNO DE ELEGIR!</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='text-align:center;'><span class='turno-badge'>🎯 ¡GANASTE EL TIRO! ELIGE CARTA</span></div>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div style='text-align:center;'><span class='turno-badge' style='background:#fca5a5;'>⏳ TURNO DE: {nombre_turno_actual.upper()}</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='text-align:center;'><span class='turno-badge' style='background:#fca5a5;'>⏳ GANÓ {nombre_turno_actual.upper()} (ELIGE CARTA)</span></div>", unsafe_allow_html=True)
             else:
-                st.info("💡 Tiren sus dados arriba para definir quién empieza.")
+                if d1 is None or d2 is None:
+                    st.info("🎲 Lanzar los dados ambos para ver quién gana el turno de sacar carta esta ronda.")
 
             st.write("")
 
